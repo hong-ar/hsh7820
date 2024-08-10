@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple FPS Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            overflow: hidden;
+            background-color: #2c3e50;
+            color: white;
+            cursor: url('gun.png'), auto; /* Change cursor to gun image */
+        }
+        #gameArea {
+            position: relative;
+            width: 50vw; /* Reduced width */
+            height: 40vh; /* Reduced height */
+            background-color: #34495e;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 2px solid #ecf0f1;
+        }
+        .target {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #e74c3c;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .bullet {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: yellow;
+            border-radius: 50%;
+            pointer-events: none; /* Prevent interaction with bullets */
+            transition: transform 0.3s linear, opacity 0.3s linear;
+        }
+        #score, #timer {
+            font-size: 24px;
+            margin-top: 20px;
+        }
+        .gun {
+            position: absolute;
+            bottom: 20px; /* Position the gun at the bottom */
+            left: 50%; /* Center horizontally */
+            transform: translateX(-50%);
+            width: 100px; /* Adjust width as needed */
+            height: 50px; /* Adjust height as needed */
+            background: url('gun.png') no-repeat center center; /* Use a gun image */
+            background-size: contain; /* Scale the image to fit the container */
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple FPS Game</h1>
+    <div id="gameArea">
+        <div class="gun"></div> <!-- Gun image placed here -->
+    </div>
+    <div id="score">Score: 0</div>
+    <div id="timer">Time Left: 60s</div>
+
+    <!-- Audio element for gunshot sound -->
+    <audio id="gunshotSound" src="gunshot.mp3"></audio>
+
+    <script>
+        let score = 0;
+        let timeLeft = 60; // Changed to 60 seconds
+        let spawnInterval = 2000; // initial spawn interval in milliseconds
+        const gameArea = document.getElementById('gameArea');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const gunshotSound = document.getElementById('gunshotSound'); // Get the audio element
+
+        // Function to create and animate the bullet
+        function shootBullet(x, y) {
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            bullet.style.left = x - 5 + 'px'; // Center bullet on click position
+            bullet.style.top = y - 5 + 'px';
+            gameArea.appendChild(bullet);
+
+            // Calculate the bullet trajectory
+            const bulletEndX = Math.random() * (gameArea.clientWidth - 10);
+            const bulletEndY = Math.random() * (gameArea.clientHeight - 10);
+
+            bullet.style.transform = `translate(${bulletEndX - (x - 5)}px, ${bulletEndY - (y - 5)}px)`;
+
+            setTimeout(() => {
+                bullet.style.opacity = '0';
+                setTimeout(() => gameArea.removeChild(bullet), 500);
+            }, 10);
+        }
+
+        function playSound() {
+            gunshotSound.play(); // Play the gunshot sound
+        }
+
+        function spawnTarget() {
+            const target = document.createElement('div');
+            target.classList.add('target');
+            target.style.top = Math.random() * (gameArea.clientHeight - 50) + 'px';
+            target.style.left = Math.random() * (gameArea.clientWidth - 50) + 'px';
+            gameArea.appendChild(target);
+
+            target.addEventListener('click', function(event) {
+                shootBullet(event.clientX, event.clientY); // Shoot bullet
+                playSound(); // Play sound on target hit
+                score++;
+                scoreDisplay.textContent = 'Score: ' + score;
+                gameArea.removeChild(target);
+                
+                // Adjust spawn interval based on score (Increased speed of target appearance)
+                spawnInterval = Math.max(500, 2000 - score * 40); // minimum spawn interval of 500ms
+
+                if (timeLeft > 0) {
+                    spawnTarget();
+                }
+            });
+
+            setTimeout(function() {
+                if (gameArea.contains(target)) {
+                    gameArea.removeChild(target);
+                    if (timeLeft > 0) {
+                        spawnTarget();
+                    }
+                }
+            }, spawnInterval);
+        }
+
+        function startTimer() {
+            const timerInterval = setInterval(function() {
+                timeLeft--;
+                timerDisplay.textContent = 'Time Left: ' + timeLeft + 's';
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            let resultMessage = score >= 35 ? 'Success! You scored 35 or more points.' : 'Failure! You scored less than 35 points.';
+            alert('Game Over! Your final score is: ' + score + '. ' + resultMessage);
+            gameArea.innerHTML = ''; // Clear the game area
+        }
+
+        spawnTarget();
+        startTimer();
+    </script>
+</body>
+</html>
